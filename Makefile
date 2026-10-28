@@ -29,6 +29,7 @@ LDFLAGS = -L$(RAYLIB_DIR)/src
 LDLIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
 
 RM = rm -f
+RM_DIR = rm -rf
 DIR_DUP = mkdir -p $(@D)
 
 all: $(NAME)
@@ -40,23 +41,33 @@ $(NAME): $(OBJS) $(PRINTF)
 	$(CC) $(OBJS) $(PRINTF) -o $(NAME) $(LDFLAGS) $(LDLIBS)
 	@printf "$(COLOR_GREEN)$(COLOR_BOLD)%s compile avec succes !$(COLOR_RESET)\n" "$(NAME)"
 
-$(OBJ_DIR)/%.o: %.c main.h
+$(OBJ_DIR)/%.o: %.c main.h $(RAYLIB_LIB)
 	@$(DIR_DUP)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
 
+$(RAYLIB_LIB):
+	@if [ ! -d $(RAYLIB_DIR) ]; then \
+		printf "$(COLOR_YELLOW)Installation de raylib...$(COLOR_RESET)\n"; \
+		git clone --depth 1 https://github.com/raysan5/raylib.git $(RAYLIB_DIR); \
+	fi
+	@printf "$(COLOR_YELLOW)Compilation de raylib...$(COLOR_RESET)\n"
+	$(MAKE) -C $(RAYLIB_DIR)/src PLATFORM=PLATFORM_DESKTOP -j$$(nproc)
+
 clean:
 	@$(RM) $(OBJS)
-	@rm -rf $(OBJ_DIR)
+	@$(RM_DIR) $(OBJ_DIR)
 	@$(MAKE) -C $(PRINTF_DIR) clean
 
 fclean: clean
 	@$(RM) $(NAME)
 	@$(MAKE) -C $(PRINTF_DIR) fclean
 
+raylib_clean:
+	@$(RM_DIR) "$(RAYLIB_DIR)"
+	@printf "$(COLOR_RED)Raylib supprimée.$(COLOR_RESET)\n"
+
 re:
 	@$(MAKE) fclean
 	@$(MAKE) all
-
-.PHONY: all clean fclean re
 
 .PHONY: all clean fclean re
